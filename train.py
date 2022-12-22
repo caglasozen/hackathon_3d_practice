@@ -16,15 +16,16 @@ def train(train_dataloader, model, opt, epoch, args, writer):
 
     for i, batch in enumerate(train_dataloader):
         point_clouds, labels = batch
+        point_clouds = point_clouds.transpose(1, 2)
         point_clouds = point_clouds.to(args.device)
         labels = labels.to(args.device).to(torch.long)
 
         # ------ TO DO: Forward Pass ------
-        predictions = 
+        predictions, trans = model(point_clouds)
 
         if (args.task == "seg"):
             labels = labels.reshape([-1])
-            predictions = predictions.reshape([-1, args.num_seg_class])
+            predictions, trans = predictions.reshape([-1, args.num_seg_class])
             
         # Compute Loss
         criterion = torch.nn.CrossEntropyLoss()
@@ -50,12 +51,15 @@ def test(test_dataloader, model, epoch, args, writer):
         num_obj = 0
         for batch in test_dataloader:
             point_clouds, labels = batch
+            point_clouds = point_clouds.transpose(1, 2)
             point_clouds = point_clouds.to(args.device)
             labels = labels.to(args.device).to(torch.long)
 
             # ------ TO DO: Make Predictions ------
             with torch.no_grad():
-                pred_labels = 
+                pred, trans = model(point_clouds)
+                
+            pred_labels = pred.data.max(1)[1]
             correct_obj += pred_labels.eq(labels.data).cpu().sum().item()
             num_obj += labels.size()[0]
 
@@ -69,12 +73,13 @@ def test(test_dataloader, model, epoch, args, writer):
         num_point = 0
         for batch in test_dataloader:
             point_clouds, labels = batch
+            point_clouds = point_clouds.transpose(1, 2)
             point_clouds = point_clouds.to(args.device)
             labels = labels.to(args.device).to(torch.long)
 
             # ------ TO DO: Make Predictions ------
             with torch.no_grad():     
-                pred_labels = 
+                pred_labels, trans, trans_feat = model(point_clouds) 
 
             correct_point += pred_labels.eq(labels.data).cpu().sum().item()
             num_point += labels.view([-1,1]).size()[0]
@@ -99,9 +104,9 @@ def main(args):
 
     # ------ TO DO: Initialize Model ------
     if args.task == "cls":
-        model = 
+        model = cls_model(k=3)
     else:
-        model = 
+        model = seg_model(k=6)
     
     # Load Checkpoint 
     if args.load_checkpoint:
@@ -127,6 +132,8 @@ def main(args):
     
     for epoch in range(args.num_epochs):
 
+        model = model.to(args.device)
+        
         # Train
         train_epoch_loss = train(train_dataloader, model, opt, epoch, args, writer)
         
@@ -159,10 +166,10 @@ def create_parser():
     parser.add_argument('--num_seg_class', type=int, default=6, help='The number of segmentation classes')
 
     # Training hyper-parameters
-    parser.add_argument('--num_epochs', type=int, default=250)
-    parser.add_argument('--batch_size', type=int, default=32, help='The number of images in a batch.')
+    parser.add_argument('--num_epochs', type=int, default=5)
+    parser.add_argument('--batch_size', type=int, default=4, help='The number of images in a batch.')
     parser.add_argument('--num_workers', type=int, default=0, help='The number of threads to use for the DataLoader.')
-    parser.add_argument('--lr', type=float, default=0.001, help='The learning rate (default 0.001)')
+    parser.add_argument('--lr', type=float, default=0.008, help='The learning rate (default 0.001)')
 
     parser.add_argument('--exp_name', type=str, default="exp", help='The name of the experiment')
 
