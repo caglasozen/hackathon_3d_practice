@@ -21,11 +21,13 @@ def train(train_dataloader, model, opt, epoch, args, writer):
         labels = labels.to(args.device).to(torch.long)
 
         # ------ TO DO: Forward Pass ------
-        predictions, trans = model(point_clouds)
+        if (args.task == "cls"):
+            predictions, trans = model(point_clouds)
 
         if (args.task == "seg"):
+            predictions, trans, trans_feat = model(point_clouds)
             labels = labels.reshape([-1])
-            predictions, trans = predictions.reshape([-1, args.num_seg_class])
+            predictions = predictions.reshape([-1, args.num_seg_class])
             
         # Compute Loss
         criterion = torch.nn.CrossEntropyLoss()
@@ -79,8 +81,9 @@ def test(test_dataloader, model, epoch, args, writer):
 
             # ------ TO DO: Make Predictions ------
             with torch.no_grad():     
-                pred_labels, trans, trans_feat = model(point_clouds) 
-
+                pred, trans, trans_feat = model(point_clouds) 
+                
+            pred_labels = pred.data.max(2)[1]
             correct_point += pred_labels.eq(labels.data).cpu().sum().item()
             num_point += labels.view([-1,1]).size()[0]
 
@@ -162,7 +165,7 @@ def create_parser():
     parser = argparse.ArgumentParser()
 
     # Model & Data hyper-parameters
-    parser.add_argument('--task', type=str, default="cls", help='The task: cls or seg')
+    parser.add_argument('--task', type=str, default="seg", help='The task: cls or seg')
     parser.add_argument('--num_seg_class', type=int, default=6, help='The number of segmentation classes')
 
     # Training hyper-parameters
