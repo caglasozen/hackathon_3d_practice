@@ -32,13 +32,7 @@ def create_parser():
     return parser
 
 
-if __name__ == '__main__':
-    parser = create_parser()
-    args = parser.parse_args()
-    args.device = torch.device("cuda" if torch.cuda.is_available() else 'cpu')
-
-    create_dir(args.output_dir)
-
+def evaluate(args):
     # ------ TO DO: Initialize Model for Classification Task ------
     model =  cls_model(k=3)
     
@@ -79,3 +73,21 @@ if __name__ == '__main__':
     accuracy = correct_obj / num_obj
 
     print ("test accuracy: {}".format(accuracy))
+
+
+if __name__ == '__main__':
+    parser = create_parser()
+    args = parser.parse_args()
+    args.device = torch.device("cuda" if torch.cuda.is_available() else 'cpu')
+
+    #Robustness analysis with no_of_points 
+
+    #Classification
+
+    exp_vals = [10, 100, 1000, 5000, 10000]
+
+    for no_of_points in exp_vals:
+        args.num_points = no_of_points
+        
+        print("##############EXPERIMENT FOR: " + str(no_of_points) )
+        evaluate(args)
