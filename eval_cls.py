@@ -3,8 +3,8 @@ import argparse
 
 import torch
 from models import cls_model
-from utils import create_dir
 from data_loader import get_data_loader
+from utils import create_dir, viz_cls
 
 
 def create_parser():
@@ -58,7 +58,7 @@ if __name__ == '__main__':
     
     model = model.to(args.device)
     
-    for batch in test_dataloader:
+    for i, batch in enumerate(test_dataloader):
         point_clouds, labels = batch
         point_clouds = point_clouds.transpose(1, 2)
         point_clouds = point_clouds.to(args.device)
@@ -71,9 +71,11 @@ if __name__ == '__main__':
         pred_labels = pred.data.max(1)[1]
         correct_obj += pred_labels.eq(labels.data).cpu().sum().item()
         num_obj += labels.size()[0]
+        
+        if i < 50:
+            viz_cls(point_clouds, labels, pred_labels, args.output_dir, i)
 
     # Compute Accuracy of Test Dataset
     accuracy = correct_obj / num_obj
 
     print ("test accuracy: {}".format(accuracy))
-

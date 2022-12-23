@@ -8,6 +8,10 @@ from pytorch3d.renderer import (
     PointsRasterizer,
 )
 import imageio
+import matplotlib.pyplot as plt
+import numpy as np
+
+CLASSES = ["chair", "vase", "lamp"]
 
 def save_checkpoint(epoch, model, args, best=False):
     if best:
@@ -52,6 +56,32 @@ def get_points_renderer(
     return renderer
 
 
+def viz_cls(verts, labels, pred_labels, path, batch_idx):
+    verts = verts.cpu().detach().numpy()
+    labels = labels.cpu().detach().numpy()
+
+    fig, axes = plt.subplots(1,4,figsize=(28,7))
+    for i, ax in enumerate(axes):
+        
+        if labels[i] == pred_labels[i]:
+            color = "green"
+        else:
+            color = "red"
+        
+        pos = 140 + i + 1
+        ax = fig.add_subplot(pos, projection="3d")
+        ax.scatter(
+        verts[i, 0, :],
+        verts[i, 1, :],
+        c=color,
+        s=0.1,
+        marker="o",
+        )
+        ax.set_xlabel( "GT: " + CLASSES[labels[i]])
+        ax.set_ylabel( "Predicted: " + CLASSES[pred_labels[i]])
+    plt.savefig(os.path.join(path, "cls_batch_" + str(batch_idx) + ".png"))
+    plt.close()
+    
 def viz_seg (verts, labels, path, device):
     """
     visualize segmentation result
